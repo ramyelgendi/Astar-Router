@@ -40,7 +40,7 @@ class FileParsing:
         for i,line in enumerate(pathsList):
             out.write(self.netNames[i]+" ")
             for path in line:
-                out.write("("+str(path[1]) + " "+str(path[2]) + " "+str(path[0]) + ") ")
+                out.write("("+str(path[2]) + " "+str(path[0]) + " "+str(path[1]) + ") ")
 
             out.write("\n")
 

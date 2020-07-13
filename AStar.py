@@ -14,14 +14,14 @@ class AStar:
 
         for x in range(height):  # Initializing Empty Grid
             for y in range(width):
-                self.grid[x][y] = [0, 0, 0]
-
+                for z in range(via):
+                    self.grid[x][y] = [0, 0, 0]
 
     def H_Fn(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
         return abs(x2 - x1) + abs(y2 - y1) + abs(z2 - z1)
 
     def Next(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
-        F_final=self.height*self.width
+        F_final = self.height * self.width
         Final = []
         if z1 == 1:  # Source Node is in layer 1
             if x1 - 1 >= 0 and self.grid[x1 - 1][y1][z1] != 1 and self.grid[x1 - 1][y1][z1 + 1] != 1:
@@ -75,17 +75,11 @@ class AStar:
         return Node, F_final, G
 
     def Path(self, z1, x1, y1, z2, x2, y2):
-        # Creating Variables
-        F = []
-        H = []
-        GCost = []
-        FinalPath = []
-
         # Initialization
-        FinalPath.append([x1, y1, z1])
-        GCost.append(self.via)
-        H.append(self.H_Fn(x1, y1, z1, x1, y1, z1))
-        F.append(GCost[0] + H[0])
+        FinalPath = [[x1, y1, z1]]
+        GCost = [self.via]
+        H = [self.H_Fn(x1, y1, z1, x1, y1, z1)]
+        F = [GCost[0] + H[0]]
 
         self.grid[x1][y1][z1 - 1] = 1
 
