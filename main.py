@@ -5,7 +5,7 @@ import numpy as np
 plt.figure()
 plt.axes(projection='3d')
 
-test = AStar.AStar(1,1000,1000)
+test = AStar.AStar(2,1000,1000)
 a, b, c = test.Path(1, 10, 20, 2, 30, 50)
 d, e, f = test.Path(2, 100, 200, 1, 300, 50)
 g, h, i = test.Path(1, 100, 50, 2, 300, 150)
