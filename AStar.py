@@ -1,0 +1,108 @@
+# Ramy ElGendi
+# 900170269
+
+# Libraries
+import numpy as np
+
+
+class AStar:
+    def __init__(self, via=1, height=1000, width=1000):  # Class Constructor
+        self.height = height
+        self.width = width
+        self.via = via
+        self.grid = np.empty([width, height], dtype=list)  # Creating a numpy array that accepts lists WHY NUMPY? Faster
+
+        for x in range(height):  # Initializing Empty Grid
+            for y in range(width):
+                self.grid[x][y] = [0, 0, 0]
+
+        print(self.grid)
+
+    def H_Fn(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
+        return abs(x2 - x1) + abs(y2 - y1) + abs(z2 - z1)
+
+    def Next(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
+        F_final=self.height*self.width
+        Final = []
+        if z1 == 1:  # Source Node is in layer 1
+            if x1 - 1 >= 0 and self.grid[x1 - 1][y1][z1] != 1 and self.grid[x1 - 1][y1][z1 + 1] != 1:
+                Final.append([x1 - 1, y1, z1 + 1])
+            if x1 >= 0 and self.grid[x1][y1 - 1][z1 - 1] != 1:
+                Final.append([x1, y1 - 1, z1])
+            if x1 + 1 < self.height and self.grid[x1 + 1][y1][z1] != 1 and self.grid[x1 + 1][y1][z1 + 1] != 1:
+                Final.append([x1 + 1, y1, z1 + 1])
+            if y1 + 1 < self.width and self.grid[x1][y1 + 1][z1 - 1] != 1:
+                Final.append([x1, y1 + 1, z1])
+        elif z1 == 2:  # Source Node is in layer 2
+            if z2 == 2:
+                z = z2 - 1
+            else:
+                z = z2
+
+            if x1 - 1 >= 0 and self.grid[x1 - 1][y1][z1 - 1] != 1:
+                Final.append([x1 - 1, y1, z1])
+            if y1 - 1 >= 0 and (self.grid[x1][y1 - 1][0] != 1 or self.grid[x1][y1 - 1][2] != 1):
+                Final.append([x1, y1 - 1, 1])
+            if x1 + 1 < self.height and self.grid[x1 + 1][y1][1] != 1:
+                Final.append([x1 + 1, y1, z1])
+            if y1 + 1 < self.width and (self.grid[x1][y1][0] != 1 or self.grid[x1][y1 + 1][2] != 1):
+                Final.append([x1, y1 + 1, z])
+
+        else:  # Support for multi layer (NOT TESTED)
+
+            if x1 - 1 >= 0 and self.grid[x1 - 1][y1][0] != 1 and self.grid[x1 - 1][y1][1] != 1:
+                Final.append([x1 - 1, y1, z1 - 1])
+            if y1 - 1 >= 0 and self.grid[x1][y1 - 1][2] != 1:
+                Final.append([x1, y1 - 1, z1 + 1])
+            if x1 + 1 < self.height and self.grid[x1 + 1][y1][0] != 1 and self.grid[x1 + 1][y1][1] != 1:
+                Final.append([x1, y1 + 1, z1 + 1])
+            if y1 + 1 < self.width and self.grid[x1][y1 + 1][2] != 1:
+                Final.append([x1, y1 + 1, z1 + 1])
+
+        if len(Final) == 0:
+            print("Error!")
+            return [x1, y1, z1, -1, -1, -1]
+        else:
+            for node in Final:
+                if z1 == node[2]:
+                    F = 1 + self.H_Fn(node[0], node[1], node[2], x2, y2, z2)
+                else:
+                    F = self.via + self.H_Fn(node[0], node[1], node[2], x2, y2, z2)
+
+                if F < F_final:  # Picking the lowest
+                    F_final = F
+                    Node = node
+                    G = F - self.H_Fn(node[0], node[1], node[2], x2, y2, z2)
+
+        return Node, F_final, G
+
+    def Path(self, z1, x1, y1, z2, x2, y2):
+        # Creating Variables
+        F = []
+        H = []
+        GCost = []
+        FinalPath = []
+        hasArrived = False
+
+        # Initialization
+        FinalPath.append([x1, y1, z1])
+        GCost.append(self.via)
+        H.append(self.H_Fn(x1, y1, z1, x1, y1, z1))
+        F.append(GCost[0] + H[0])
+
+        self.grid[x1][y1][z1 - 1] = 1
+
+        CurrentNode = FinalPath[0]
+        while not hasArrived:
+            # Check if target==source
+            if CurrentNode == [x2, y2, z2]:
+                hasArrived = True
+
+            CurrentNode, f, g = self.Next(CurrentNode[0], CurrentNode[1], CurrentNode[2], x2, y2, z2)
+
+            self.grid[CurrentNode[0]][CurrentNode[1]][CurrentNode[2] - 1] = 1
+            FinalPath.append(CurrentNode)
+            F.append(f)
+            GCost.append(g)
+
+        return FinalPath, GCost, F
