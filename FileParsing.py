@@ -37,7 +37,6 @@ class FileParsing:
 
     def OutputList(self, pathsList,file_out):
         out = open(file_out, "w")
-        print(self.netNames)
         for i,line in enumerate(pathsList):
             out.write(self.netNames[i]+" ")
             for path in line:

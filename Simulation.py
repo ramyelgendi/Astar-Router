@@ -8,14 +8,14 @@ file = FileParsing.FileParsing(inputFile)
 if not file.Exists():
     print("Parsing file does not exist!")
     sys.exit()
-
 netList = file.Parse()
+print("Input has been parsed successfully!")
 
 # Create Grid
 router = AStar.AStar(1, 1000, 1000)
 
 pathsList = []
-
+print("Beginning simulation!")
 for line in netList:
     Path = []
     for i, node in enumerate(line):
@@ -34,9 +34,18 @@ outputFile = inputFile.replace('.txt', '_out.txt')
 status = file.OutputList(pathsList, outputFile)
 if status:
     print("Completed Successfully! ")
-    visual = visual.visual(pathsList)
-    visual.figure() # Draw
-    sys.exit()
+
+    while True:
+        choice = input("Do you want to see results on a graph? (yes/no): \n")
+        if choice == "yes":
+            visual = visual.visual(pathsList)
+            visual.figure() # Draw
+            sys.exit()
+        elif choice == "no":
+            sys.exit()
+        else:
+            print("Invalid Entry! Please type yes/no only")
+
 
 else:
     print("Failed! ")
