@@ -1,6 +1,6 @@
 # A* Maze Router
 
-Foobar is a Python library for dealing with word pluralization.
+This program is a program that reads a file of netlists, and connect each net together using the A* algorithm.
 
 ## How to run on MacOS
 
