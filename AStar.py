@@ -16,7 +16,6 @@ class AStar:
             for y in range(width):
                 self.grid[x][y] = [0, 0, 0]
 
-        print(self.grid)
 
     def H_Fn(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
         return abs(x2 - x1) + abs(y2 - y1) + abs(z2 - z1)
@@ -60,8 +59,7 @@ class AStar:
                 Final.append([x1, y1 + 1, z1 + 1])
 
         if len(Final) == 0:
-            print("Error!")
-            return [x1, y1, z1, -1, -1, -1]
+            return (x1, y1, z1), 0, 0
         else:
             for node in Final:
                 if z1 == node[2]:
@@ -82,7 +80,6 @@ class AStar:
         H = []
         GCost = []
         FinalPath = []
-        hasArrived = False
 
         # Initialization
         FinalPath.append([x1, y1, z1])
@@ -93,13 +90,11 @@ class AStar:
         self.grid[x1][y1][z1 - 1] = 1
 
         CurrentNode = FinalPath[0]
-        while not hasArrived:
+        while not CurrentNode == [x2, y2, z2]:
             # Check if target==source
-            if CurrentNode == [x2, y2, z2]:
-                hasArrived = True
+            CurrentNode_, f, g = self.Next(CurrentNode[0], CurrentNode[1], CurrentNode[2], x2, y2, z2)
 
-            CurrentNode, f, g = self.Next(CurrentNode[0], CurrentNode[1], CurrentNode[2], x2, y2, z2)
-
+            CurrentNode = CurrentNode_
             self.grid[CurrentNode[0]][CurrentNode[1]][CurrentNode[2] - 1] = 1
             FinalPath.append(CurrentNode)
             F.append(f)
