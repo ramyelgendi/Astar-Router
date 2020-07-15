@@ -23,16 +23,18 @@ class FileParsing:
 
         for line in lines:  # net1 (1, 10, 20) (2, 30, 50) (1, 5, 100)
             netList = []
-            self.netNames.append(line[:line.index('(')])
-            modified = line[line.index('(') + 1:].split('(')
-            for x in modified:
-                if ')' in x:
-                    i = x.replace(')', '')
-                if '\n' in i:
-                    i = i.replace('\n', '')
-                netList.append(i.split(','))
-            self.netList.append(netList)
-
+            try: # Skipping any errors/empty lines
+                self.netNames.append(line[:line.index('(')])
+                modified = line[line.index('(') + 1:].split('(')
+                for x in modified:
+                    if ')' in x:
+                        i = x.replace(')', '')
+                    if '\n' in i:
+                        i = i.replace('\n', '')
+                    netList.append(i.split(','))
+                self.netList.append(netList)
+            except ValueError:
+                pass
         return self.netList
 
     def OutputList(self, pathsList, file_out):
