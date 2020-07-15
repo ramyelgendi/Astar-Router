@@ -1,28 +1,649 @@
-import matplotlib.pyplot as plt
-import AStar
-import numpy as np
 
-plt.figure()
-plt.axes(projection='3d')
+from util import *
 
-test = AStar.AStar(2,1000,1000)
-a, b, c = test.Path(1, 10, 20, 2, 30, 50)
-d, e, f = test.Path(2, 100, 200, 1, 300, 50)
-g, h, i = test.Path(1, 100, 50, 2, 300, 150)
+class Pins:
+    """
+    Class Pins represents the PINS section in DEF file. It contains
+    individual Pin objects.
+    """
 
-print(" Path : ", a)
-print(" g : ", b)
-print(" f : ", c)
-print(" ")
+    def __init__(self, num_pins):
+        self.type = "PINS_DEF"
+        self.num_pins = num_pins
+        self.pins = []
+        self.pin_dict = {}
 
-print(" Path : ", d)
-print(" g : ", e)
-print(" f : ", f)
+    def parse_next(self, info):
+        if info[0] == "-":
+            # create a new pin
+            # print (info[1])
+            current_pin = Pin(info[1])
+            self.pins.append(current_pin)
+            self.pin_dict[info[1]] = current_pin
+            # print ("new")
+        else:
+            current_pin = self.get_last_pin()
+            # print ("last")
+            # parse the next info
+            if info[0] == "NET":
+                current_pin.net = info[1]
+            elif info[0] == "DIRECTION":
+                current_pin.direction = info[1]
+            elif info[0] == "USE":
+                current_pin.use = info[1]
+            elif info[0] == "LAYER":
+                new_layer = Layer(info[1])
+                new_layer.points.append([int(info[3]), int(info[4])])
+                new_layer.points.append([int(info[7]), int(info[8])])
+                current_pin.layer = new_layer
+            elif info[0] == "PLACED":
+                current_pin.placed = [int(info[2]), int(info[3])]
+                current_pin.orient = info[5]
 
-print("\n")
-paths = [a,d,g]
-for i in paths:
-    print(i)
-    plt.plot([v[0] for v in i], [v[1] for v in i], [v[2] for v in i])
+    def __len__(self):
+        return len(self.pins)
 
-plt.show()
+    def __iter__(self):
+        return self.pins.__iter__()
+
+    def __getitem__(self, pin_name):
+        return self.get_pin(pin_name)
+
+    def get_last_pin(self):
+        return self.pins[-1]
+
+    def to_def_format(self):
+        s = ""
+        s += "PINS" + " " + str(self.num_pins) + " ;\n"
+        for each_pin in self.pins:
+            # check if the each_pin has Layer and Placed != None
+            s += each_pin.to_def_format() + "\n"
+        s += "END PINS"
+        return s
+
+    def get_pin(self, pin_name):
+        return self.pin_dict[pin_name]
+
+
+class Pin:
+    """
+    Class Pin represents an individual pin defined in the DEF file.
+    """
+
+    def __init__(self, name):
+        self.type = "PIN_DEF"
+        self.name = name
+        self.net = None
+        self.direction = None
+        self.use = None
+        self.layer = None
+        self.placed = None
+        self.orient = None
+
+    # add methods to add information to the Pin object
+    def __str__(self):
+        s = ""
+        s += self.type + ": " + self.name + "\n"
+        s += "    " + "Name: " + self.net + "\n"
+        s += "    " + "Direction: " + self.direction + "\n"
+        s += "    " + "Use: " + self.use + "\n"
+        if self.layer:
+            s += "    " + "Layer: " + str(self.layer) + "\n"
+        if self.placed:
+            s += "    " + "Placed: " + str(self.placed) + " " + self.orient + "\n"
+        return s
+
+    def to_def_format(self):
+        #- N1 + NET N1 + DIRECTION INPUT + USE SIGNAL
+        #  + LAYER metal2 ( -70 0 ) ( 70 140 )
+        #  + PLACED ( 27930 0 ) N ;
+        s = ""
+        s += "- " + self.name + " + NET " + self.net
+        s += " + DIRECTION " + self.direction + " + USE " + self.use + "\n"
+        if self.layer:
+            s += "  + " + self.layer.to_def_format() + "\n"
+        if self.placed:
+            s += "  + " + "PLACED " + "( " + str(self.placed[0]) + " "
+            s += str(self.placed[1]) + " ) " + self.orient + "\n"
+        s += " ;"
+        return s
+
+    def get_metal_layer(self):
+        return self.layer.name
+
+
+class Layer:
+    """
+    Class Layer represents a layer defined inside a PIN object
+    """
+
+    def __init__(self, name):
+        self.type = "LAYER_DEF"
+        self.name = name
+        self.points = []
+
+    def __str__(self):
+        s = ""
+        s += self.name
+        for pt in self.points:
+            s += " " + str(pt)
+        return s
+
+    def to_def_format(self):
+        s = ""
+        s += "LAYER" + " " + self.name
+        for pt in self.points:
+            s += " ( " + str(pt[0]) + " " + str(pt[1]) + " )"
+        return s
+
+
+class Components:
+    """
+    Class Components represents the COMPONENTS section in the DEF file.
+    """
+
+    def __init__(self, num_comps):
+        self.type = "COMPONENTS_DEF"
+        self.num_comps = num_comps
+        self.comps = []
+        self.comp_dict = {}
+
+    def parse_next(self, info):
+        if info[0] == "-":
+            new_comp = Component(info[1])
+            new_comp.macro = info[2]
+            self.comps.append(new_comp)
+            self.comp_dict[info[1]] = new_comp
+        else:
+            current_comp = self.get_last_comp()
+            # parse the next info
+            if info[0] == "PLACED":
+                current_comp.placed = [int(info[2]), int(info[3])]
+                current_comp.orient = info[5]
+
+    def __len__(self):
+        return len(self.comps)
+
+    def __getitem__(self, comp_name):
+        return self.get_comp(comp_name)
+
+    def __iter__(self):
+        return self.comps.__iter__()
+
+    def get_last_comp(self):
+        return self.comps[-1]
+
+    def get_comp(self, comp_name):
+        return self.comp_dict[comp_name]
+
+    def to_def_format(self):
+        s = ""
+        s += "COMPONENTS" + " " + str(self.num_comps) + " ;\n"
+        for each_comp in self.comps:
+            s += each_comp.to_def_format() + "\n"
+        s += "END COMPONENTS"
+        return s
+
+
+class Component:
+    """
+    Represents individual component inside the COMPONENTS section in the DEF
+    file.
+    """
+
+    def __init__(self, name):
+        self.type = "COMPONENT_DEF"
+        self.name = name
+        self.macro = None
+        self.placed = None
+        self.orient = None
+
+    def get_macro(self):
+        return self.macro
+
+    def __str__(self):
+        s = ""
+        s += self.type + ": " + self.name + "\n"
+        s += "    " + "Macro: " + self.macro + "\n"
+        s += "    " + "Placed: " + str(self.placed) + " " + self.orient + "\n"
+        return s
+
+    def to_def_format(self):
+        s = ""
+        s += "- " + self.name + " " + self.macro + " + " + "PLACED"
+        s += " ( " + str(self.placed[0]) + " " + str(self.placed[1]) + " ) "
+        s += self.orient + "\n ;"
+        return s
+
+
+class Nets:
+    """
+    Represents the section NETS in the DEF file.
+    """
+
+    def __init__(self, num_nets):
+        self.type = "NETS_DEF"
+        self.num_nets = num_nets
+        self.nets = []
+        self.net_dict = {}
+
+    def parse_next(self, info):
+        # remember to check for "(" before using split_parentheses
+        # if we see "(", then it means new component or new pin
+        # another method is to check the type of the object, if it is a list
+        # then we know it comes from parentheses
+        info = split_parentheses(info)
+        if info[0] == "-":
+            net_name = info[1]
+            new_net = Net(net_name)
+            self.nets.append(new_net)
+            self.net_dict[net_name] = new_net
+        else:
+            current_net = self.get_last_net()
+            # parse next info
+            if isinstance(info[0], list):
+                for comp in info:
+                    current_net.comp_pin.append(comp)
+            elif info[0] == "ROUTED" or info[0] == "NEW":
+                new_routed = Routed()
+                new_routed.layer = info[1]
+                # add points to the new_routed
+                for idx in range(2, len(info)):
+                    if isinstance(info[idx], list):
+                        # this is a point
+                        parsed_pt = info[idx]
+                        new_pt = []
+                        for j in range(len(parsed_pt)):
+                            # if we see "*", the new coordinate comes from last
+                            #  point's coordinate
+                            if parsed_pt[j] == "*":
+                                last_pt = new_routed.get_last_pt()
+                                new_coor = last_pt[j]
+                                new_pt.append(new_coor)
+                            else:
+                                new_pt.append(int(parsed_pt[j]))
+                        # add new_pt to the new_routed
+                        new_routed.points.append(new_pt)
+                    else:
+                        # this should be via end point
+                        new_routed.end_via = info[idx]
+                        # the location of end_via is the last point in the route
+                        new_routed.end_via_loc = new_routed.points[-1]
+                # add new_routed to the current_net
+                current_net.routed.append(new_routed)
+
+    def __iter__(self):
+        return self.nets.__iter__()
+
+    def __len__(self):
+        return len(self.nets)
+
+    def get_last_net(self):
+        return self.nets[-1]
+
+    def to_def_format(self):
+        s = ""
+        s += "NETS" + " " + str(self.num_nets) + " ;\n"
+        for each_net in self.nets:
+            s += each_net.to_def_format() + "\n"
+        s += "END NETS"
+        return s
+
+
+class Net:
+    """
+    Represents individual Net inside NETS section.
+    """
+
+    def __init__(self, name):
+        self.type = "NET_DEF"
+        self.name = name
+        self.comp_pin = []
+        self.routed = []
+
+    def __str__(self):
+        s = ""
+        s += self.type + ": " + self.name + "\n"
+        s += "    " + "Comp/Pin: "
+        for comp in self.comp_pin:
+            s += " " + str(comp)
+        s += "\n"
+        s += "    " + "Routed: " + "\n"
+        for route in self.routed:
+            s += "    " + "    " + str(route) + "\n"
+        return s
+
+    def to_def_format(self):
+        s = ""
+        s += "- " + self.name + "\n"
+        s += " "
+        for each_comp in self.comp_pin:
+            # study each comp/pin
+            # if it's a pin, check the Pin object layer (already parsed) -
+            # but how can we check the Pin object layer?
+            s += " ( " + " ".join(each_comp) + " )"
+        if self.routed:
+            s += "\n  + ROUTED " + self.routed[0].to_def_format() + "\n"
+            for i in range(1, len(self.routed)):
+                s += "    " + "NEW " + self.routed[i].to_def_format() + "\n"
+        s += " ;"
+        return s
+
+class Routed:
+    """
+    Represents a ROUTED definition inside a NET.
+    """
+
+    def __init__(self):
+        self.type = "ROUTED_DEF"
+        self.layer = None
+        self.points = []
+        self.end_via = None
+        self.end_via_loc = None
+
+    def __str__(self):
+        s = ""
+        s += self.layer
+        for pt in self.points:
+            s += " " + str(pt)
+        if self.end_via != None:
+            s += " " + self.end_via
+        return s
+
+    def get_last_pt(self):
+        return self.points[-1]
+
+    def get_layer(self):
+        return self.layer
+
+    def to_def_format(self):
+        s = ""
+        s += self.layer
+        for pt in self.points:
+            s += " ("
+            for coor in pt:
+                s += " " + str(coor)
+            s += " )"
+        if self.end_via != None:
+            s += " " + self.end_via
+        return s
+
+
+class Tracks:
+    """
+    Represents a TRACKS definition inside the DEF file.
+    """
+    def __init__(self, name):
+        self.type = "TRACKS_DEF"
+        self.name = name
+        self.pos = None
+        self.do = None
+        self.step = None
+        self.layer = None
+
+    def to_def_format(self):
+        s = ""
+        s += "TRACKS" + " " + self.name + " " + str(self.pos) + " "
+        s += "DO" + " " + str(self.do) + " " + "STEP" + " " + str(self.step)
+        s += " " + "LAYER" + " " + self.layer + " ;"
+        return s
+
+    def get_layer(self):
+        return self.layer
+
+
+class GCellGrid:
+    """
+    Represents a GCELLGRID definition in the DEF file.
+    """
+    def __init__(self, name):
+        self.type = "GCELLGRID_DEF"
+        self.name = name
+        self.pos = None
+        self.do = None
+        self.step = None
+
+    def to_def_format(self):
+        s = ""
+        s += "GCELLGRID" + " " + self.name + " " + str(self.pos) + " "
+        s += "DO" + " " + str(self.do) + " " + "STEP" + " " + str(self.step)
+        s += " ;"
+        return s
+
+class Row:
+    """
+    Represents a ROW definition in the DEF file.
+    """
+    def __init__(self, name):
+        self.type = "ROW_DEF"
+        self.name = name
+        self.site = None
+        self.pos = None
+        self.orient = None
+        self.do = None
+        self.by = None
+        self.step = None
+
+    def to_def_format(self):
+        s = ""
+        s += "ROW" + " " + self.name + " " + self.site + " "
+        s += str(self.pos[0]) + " " + str(self.pos[1]) + " " + self.orient + " "
+        s += "DO" + " " + str(self.do) + " " + "BY" + " " + str(self.by) + " "
+        s += "STEP" + " " + str(self.step[0]) + " " + str(self.step[1])
+        s += " ;"
+        return s
+
+class Property:
+    """
+    Represents a PROPERTYDEFINITIONS in the DEF file.
+    """
+    def __init__(self):
+        self.type = "PROPERTY_DEF"
+        self.texts = []
+
+    def parse_next(self, info):
+        new_line = " ".join(info)
+        self.texts.append(new_line)
+
+    def to_def_format(self):
+        s = ""
+        s += "PROPERTYDEFINITIONS\n"
+        for each_line in self.texts:
+            s += "    " + each_line + "\n"
+        s += "END PROPERTYDEFINITIONS\n"
+        return s
+
+
+class DefParser:
+    """
+    DefParser will parse a DEF file and store related information of the design.
+    """
+
+    def __init__(self, def_file):
+        self.file_path = def_file
+        # can make the stack to be an object if needed
+        self.stack = []
+        # store the statements info in a list
+        self.sections = []
+        self.property = None
+        self.components = None
+        self.pins = None
+        self.nets = None
+        self.tracks = []
+        self.gcellgrids = []
+        self.rows = []
+        self.diearea = None
+        self.version = None
+        self.dividerchar = None
+        self.busbitchars = None
+        self.design_name = None
+        self.units = None
+        self.scale = None
+
+    def parse(self):
+        """
+        Main method to parse the DEF file
+        :return: void
+        """
+        print ("Start parsing DEF file...")
+        # open the file and start reading
+        f = open(self.file_path, "r+")
+        # the program will run until the end of file f
+        for line in f:
+            # split the string by the plus '+' sign
+            parts = split_plus(line)
+            for each_part in parts:
+                # split each sub-string by space
+                info = split_space(each_part)
+                if len(info) > 0:
+                    #print info
+                    if info[0] == "PINS":
+                        new_pins = Pins(int(info[1]))
+                        self.stack.append(new_pins)
+                        # print (new_pins.type)
+                    elif info[0] == "VERSION":
+                        self.version = info[1]
+                    elif info[0] == "DIVIDERCHAR":
+                        self.dividerchar = info[1]
+                    elif info[0] == "BUSBITCHARS":
+                        self.busbitchars = info[1]
+                    elif info[0] == "DESIGN" and len(info) <= 3:
+                        # differentiate with the DESIGN statement inside
+                        # PROPERTYDEFINITIONS section.
+                        self.design_name = info[1]
+                    elif info[0] == "UNITS":
+                        self.units = info[2]
+                        self.scale = info[3]
+                    elif info[0] == "PROPERTYDEFINITIONS":
+                        new_property = Property()
+                        self.stack.append(new_property)
+                    elif info[0] == "DIEAREA":
+                        info_split = split_parentheses(info)
+                        pt1 = (int(info_split[1][0]), int(info_split[1][1]))
+                        pt2 = (int(info_split[2][0]), int(info_split[2][1]))
+                        self.diearea = [pt1, pt2]
+                    elif info[0] == "COMPONENTS":
+                        new_comps = Components(int(info[1]))
+                        self.stack.append(new_comps)
+                    elif info[0] == "NETS":
+                        new_nets = Nets(int(info[1]))
+                        self.stack.append(new_nets)
+                    elif info[0] == "TRACKS":
+                        new_tracks = Tracks(info[1])
+                        new_tracks.pos = int(info[2])
+                        new_tracks.do = int(info[4])
+                        new_tracks.step = int(info[6])
+                        new_tracks.layer = info[8]
+                        self.tracks.append(new_tracks)
+                    elif info[0] == "GCELLGRID":
+                        new_gcellgrid = GCellGrid(info[1])
+                        new_gcellgrid.pos = int(info[2])
+                        new_gcellgrid.do = int(info[4])
+                        new_gcellgrid.step = int(info[6])
+                        self.gcellgrids.append(new_gcellgrid)
+                    elif info[0] == "ROW":
+                        new_row = Row(info[1])
+                        new_row.site = info[2]
+                        new_row.pos = (int(info[3]), int(info[4]))
+                        new_row.orient = info[5]
+                        new_row.do = int(info[7])
+                        new_row.by = int(info[9])
+                        new_row.step = (int(info[11]), int(info[12]))
+                        self.rows.append(new_row)
+                    elif info[0] == "END":
+                        if len(self.stack) > 0:
+                            self.sections.append(self.stack.pop())
+                        # print ("finish")
+                    else:
+                        if len(self.stack) > 0:
+                            latest_obj = self.stack[-1]
+                            latest_obj.parse_next(info)
+        f.close()
+        # put the elements in sections list into separate variables
+        for sec in self.sections:
+            if sec.type == "PROPERTY_DEF":
+                self.property = sec
+            elif sec.type == "COMPONENTS_DEF":
+                self.components = sec
+            elif sec.type == "PINS_DEF":
+                self.pins = sec
+            elif sec.type == "NETS_DEF":
+                self.nets = sec
+        print ("Parsing DEF file done.\n")
+
+    def to_def_format(self):
+        s = ""
+        s += "#  Generated by tricao@utdallas.edu for testing only.\n\n"
+        s += "VERSION " + self.version + " ;" + "\n"
+        s += "DIVIDERCHAR " + self.dividerchar + " ;" + "\n"
+        s += "BUSBITCHARS " + self.busbitchars + " ;" + "\n"
+        s += "DESIGN " + self.design_name + " ;" + "\n"
+        s += "UNITS DISTANCE " + self.units + " " + self.scale + " ;" + "\n"
+        s += "\n"
+        props = self.sections[0]
+        s += props.to_def_format()
+        s += "\n"
+        s += "DIEAREA"
+        s += (" ( " + str(self.diearea[0][0]) + " " + str(self.diearea[0][1]) +
+             " )")
+        s += (" ( " + str(self.diearea[1][0]) + " " + str(self.diearea[1][1]) +
+             " )" + " ;")
+        s += "\n\n"
+        for each_row in self.rows:
+            s += each_row.to_def_format()
+            s += "\n"
+        s += "\n"
+        for each_tracks in self.tracks:
+            s += each_tracks.to_def_format()
+            s += "\n"
+        s += "\n"
+        for each_gcell in self.gcellgrids:
+            s += each_gcell.to_def_format()
+            s += "\n"
+        s += "\n"
+        comps = def_parser.sections[1]
+        s += comps.to_def_format()
+        s += "\n\n"
+        pins = def_parser.sections[2]
+        s += pins.to_def_format()
+        s += "\n\n"
+        nets = def_parser.sections[3]
+        s += nets.to_def_format()
+        return s
+
+    def write_def(self, new_def, back_end=True, front_end=True):
+        """
+        Write a new def file based on the information in the DefParser object.
+        Note: this method writes all information
+        :param new_def: path of the new DEF file
+        :param back_end: write BEOL information or not.
+        :param front_end: write FEOL info or not.
+        :return: void
+        """
+        f = open(new_def, mode="w+")
+        print("Writing DEF file...")
+        f.write(self.to_def_format())
+        print("Writing done.")
+        f.close()
+
+
+# Main Class
+if __name__ == '__main__':
+    # read_path = "./libraries/DEF/c880_tri.def"
+    read_path = "/Users/ramyelgendi/Downloads/crc32_unroute.def"
+    def_parser = DefParser(read_path)
+    def_parser.parse()
+
+    # for each_pin in def_parser.pins.pins:
+    #     print (each_pin)
+
+    print (def_parser.to_def_format())
+
+    # test macro and via (note: only via1)
+    # macro_dict = macro_and_via1(def_parser)
+    # for comp in macro_dict:
+    #     print (comp)
+    #     for pin in macro_dict[comp]:
+    #         print ("    " + pin + ": " + str(macro_dict[comp][pin]))
+    #     print ()
+

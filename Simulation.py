@@ -12,7 +12,7 @@ netList = file.Parse()
 print("Input has been parsed successfully!")
 
 # Create Grid
-router = AStar.AStar(1, 1000, 1000)
+router = AStar.AStar(1, 1000, 1000,6)
 
 pathsList = []
 print("Beginning simulation!")

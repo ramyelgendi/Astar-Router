@@ -2,20 +2,26 @@
 # 900170269
 
 # Libraries
+import sys
+
 import numpy as np
 
 
 class AStar:
-    def __init__(self, via=1, height=1000, width=1000):  # Class Constructor
+    def __init__(self, via=1, height=1000, width=1000, layers=10):  # Class Constructor
         self.height = height
         self.width = width
+        self.layers = layers
         self.via = via
         self.grid = np.empty([width, height], dtype=list)  # Creating a numpy array that accepts lists WHY NUMPY? Faster
 
         for x in range(height):  # Initializing Empty Grid
             for y in range(width):
-                for z in range(via):
-                    self.grid[x][y] = [0, 0, 0]
+                for z in range(layers + 1): # Creating the amount of layers
+                    if z == 0:
+                        self.grid[x][y] = []
+                    else:
+                        self.grid[x][y] += [0]
 
     def H_Fn(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
         return abs(x2 - x1) + abs(y2 - y1) + abs(z2 - z1)
