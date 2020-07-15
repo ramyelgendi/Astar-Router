@@ -35,14 +35,14 @@ class FileParsing:
 
         return self.netList
 
-    def OutputList(self, pathsList,file_out):
+    def OutputList(self, pathsList, file_out):
         out = open(file_out, "w")
-        for i,line in enumerate(pathsList):
-            out.write(self.netNames[i]+" ")
+        for i, line in enumerate(pathsList):
+            out.write(self.netNames[i] + " ")
             for path in line:
-                out.write("("+str(path[2]) + " "+str(path[0]) + " "+str(path[1]) + ") ")
+                out.write("(" + str(path[2]) + " " + str(path[0]) + " " + str(path[1]) + ") ")
 
             out.write("\n")
 
-
         return True
+

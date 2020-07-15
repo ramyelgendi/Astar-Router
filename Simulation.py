@@ -22,7 +22,7 @@ for line in netList:
         try:
             source = node
             target = line[i + 1]
-            netPath, G, F = router.Path(int(source[0]), int(source[1]), int(source[2]), int(target[0]), int(target[1]),
+            netPath = router.Path(int(source[0]), int(source[1]), int(source[2]), int(target[0]), int(target[1]),
                                         int(target[2]))
             Path = Path + netPath
         except IndexError:

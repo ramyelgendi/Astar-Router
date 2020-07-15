@@ -26,6 +26,7 @@ class AStar:
     def H_Fn(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
         return abs(x2 - x1) + abs(y2 - y1) + abs(z2 - z1)
 
+
     def Next(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
         F_final = self.height * self.width
         Final = []
@@ -83,7 +84,7 @@ class AStar:
     def Path(self, z1, x1, y1, z2, x2, y2):
         # Initialization
         FinalPath = [[x1, y1, z1]]
-        GCost = [self.via]
+        GCost = [0]
         H = [self.H_Fn(x1, y1, z1, x1, y1, z1)]
         F = [GCost[0] + H[0]]
 
@@ -100,4 +101,4 @@ class AStar:
             F.append(f)
             GCost.append(g)
 
-        return FinalPath, GCost, F
+        return FinalPath
