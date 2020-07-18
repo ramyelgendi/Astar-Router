@@ -17,7 +17,7 @@ class AStar:
 
         for x in range(height):  # Initializing Empty Grid
             for y in range(width):
-                for z in range(layers + 1): # Creating the amount of layers
+                for z in range(layers + 1):  # Creating the amount of layers
                     if z == 0:
                         self.grid[x][y] = []
                     else:
@@ -25,7 +25,6 @@ class AStar:
 
     def H_Fn(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
         return abs(x2 - x1) + abs(y2 - y1) + abs(z2 - z1)
-
 
     def Next(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
         F_final = self.height * self.width
@@ -55,15 +54,14 @@ class AStar:
                 Final.append([x1, y1 + 1, z])
 
         else:  # Support for multi layer (NOT TESTED)
-
-            if x1 - 1 >= 0 and self.grid[x1 - 1][y1][0] != 1 and self.grid[x1 - 1][y1][1] != 1:
+            if x1 - 1 >= 0 and self.grid[x1 - 0][y1][z1 - 3] != 1 and self.grid[x1 - 1][y1][z1 - 2] != 1:
                 Final.append([x1 - 1, y1, z1 - 1])
-            if y1 - 1 >= 0 and self.grid[x1][y1 - 1][2] != 1:
-                Final.append([x1, y1 - 1, z1 + 1])
-            if x1 + 1 < self.height and self.grid[x1 + 1][y1][0] != 1 and self.grid[x1 + 1][y1][1] != 1:
-                Final.append([x1, y1 + 1, z1 + 1])
-            if y1 + 1 < self.width and self.grid[x1][y1 + 1][2] != 1:
-                Final.append([x1, y1 + 1, z1 + 1])
+            if y1 - 1 >= 0 and self.grid[x1][y1 - 1][z1 - 1] != 1:
+                Final.append([x1, y1 - 1, z1])
+            if x1 + 1 < self.height and self.grid[x1 + 1][y1][z1 - 3] != 1 and self.grid[x1 + 1][y1][z1 - 2] != 1:
+                Final.append([x1 + 1, y1, z1 - 1])
+            if y1 + 1 < self.width and self.grid[x1][y1 + 1][z1 - 1] != 1:
+                Final.append([x1, y1 + 1, z1])
 
         if len(Final) == 0:
             return (x1, y1, z1), 0, 0
@@ -91,7 +89,9 @@ class AStar:
         self.grid[x1][y1][z1 - 1] = 1
 
         CurrentNode = FinalPath[0]
-        while not CurrentNode == [x2, y2, z2]:
+        timeout = 0
+        while not CurrentNode == [x2, y2, z2] and timeout < 1000000:
+            timeout += 1
             # Check if target==source
             CurrentNode_, f, g = self.Next(CurrentNode[0], CurrentNode[1], CurrentNode[2], x2, y2, z2)
 
@@ -100,5 +100,7 @@ class AStar:
             FinalPath.append(CurrentNode)
             F.append(f)
             GCost.append(g)
-
-        return FinalPath
+        if timeout < 1000000:
+            return FinalPath
+        else:
+            return []

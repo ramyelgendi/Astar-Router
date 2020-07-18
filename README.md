@@ -21,7 +21,7 @@ _Ex: if input is file.txt, output will be stored in the same directory in a file
 * The number of times the code is going to switch between layers (if needed) is set to 1 (Cost)
 
 ## Limitations
-TBD
+* Works perfectly for 2 layers, but some glitches appear beyond 2 layers
 
 ## Contributors
-Ramy ElGendi
+* Ramy ElGendi
