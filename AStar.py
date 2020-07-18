@@ -1,6 +1,7 @@
 # Ramy ElGendi
 # 900170269
-
+# Ali Moussa
+# 900160311
 # Libraries
 import sys
 
@@ -23,10 +24,10 @@ class AStar:
                     else:
                         self.grid[x][y] += [0]
 
-    def H_Fn(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
-        return abs(x2 - x1) + abs(y2 - y1) + abs(z2 - z1)
+    def H_Fn(self, x1, y1, z1, x2, y2, z2):  # Source: x1, y1, z1, Targets: x2, y2, z2
+        return abs(x2 - x1) + abs(y2 - y1) + abs(z2 - z1) # The manhattan algorithm to calculate the distance.
 
-    def Next(self, x1, y1, z1, x2, y2, z2):  # xyz1s are the source, xyz2s are the target
+    def Next(self, x1, y1, z1, x2, y2, z2):  # Source: x1, y1, z1, Targets: x2, y2, z2
         F_final = self.height * self.width
         Final = []
         if z1 == 1:  # Source Node is in layer 1
@@ -67,7 +68,7 @@ class AStar:
             return (x1, y1, z1), 0, 0
         else:
             for node in Final:
-                if z1 == node[2]:
+                if z1 == node[2]: #if there is next cell and is not source we use the function Fn to get the lowest path
                     F = 1 + self.H_Fn(node[0], node[1], node[2], x2, y2, z2)
                 else:
                     F = self.via + self.H_Fn(node[0], node[1], node[2], x2, y2, z2)
@@ -77,20 +78,20 @@ class AStar:
                     Node = node
                     G = F - self.H_Fn(node[0], node[1], node[2], x2, y2, z2)
 
-        return Node, F_final, G
+            return Node, F_final, G #we return the next node, the lowest path and the cost.
 
     def Path(self, z1, x1, y1, z2, x2, y2):
         # Initialization
-        FinalPath = [[x1, y1, z1]]
-        GCost = [0]
-        H = [self.H_Fn(x1, y1, z1, x1, y1, z1)]
-        F = [GCost[0] + H[0]]
+        FinalPath = [[x1, y1, z1]] #This is the list of final path selected from source target.
+        GCost = [0] #Cost from initial path to current.
+        H = [self.H_Fn(x1, y1, z1, x1, y1, z1)] #hueristic function for next node
+        F = [GCost[0] + H[0]] #determine which is the next node
 
         self.grid[x1][y1][z1 - 1] = 1
 
         CurrentNode = FinalPath[0]
-        timeout = 0
-        while not CurrentNode == [x2, y2, z2] and timeout < 1000000:
+        timeout = 0 #if no path is found stop searching.
+        while not CurrentNode == [x2, y2, z2] and timeout < 1000000: #while loop to check if node visited is the final node and when traversing a point initialize to 1
             timeout += 1
             # Check if target==source
             CurrentNode_, f, g = self.Next(CurrentNode[0], CurrentNode[1], CurrentNode[2], x2, y2, z2)

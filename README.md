@@ -25,3 +25,4 @@ _Ex: if input is file.txt, output will be stored in the same directory in a file
 
 ## Contributors
 * Ramy ElGendi
+* Ali Moussa
