@@ -27,4 +27,4 @@ _Ex: if input is file.txt, output will be stored in the same directory in a file
 * Ramy ElGendi
 * Ali Moussa
 
-Under supervision of Dr. Mohamed Shalan in the Digital Design 2 Course, at the American University in Cairo.
+_Under supervision of Dr. Mohamed Shalan in the Digital Design 2 Course, at the American University in Cairo._
