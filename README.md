@@ -22,6 +22,7 @@ _Ex: if input is file.txt, output will be stored in the same directory in a file
 
 ## Limitations
 * Works perfectly for 2 layers, but some glitches appear beyond 2 layers
+* Pathfinding of netlists is systemetic based on their order in the net.
 
 ## Contributors
 * Ramy ElGendi
